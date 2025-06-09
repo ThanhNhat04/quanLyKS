@@ -1,0 +1,34 @@
+# Bỏ các thư mục build tạm
+bin/
+obj/
+artifacts/
+
+# Bỏ cấu hình IDE
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Bỏ file Git
+.git/
+.gitignore
+.gitattributes
+
+# Bỏ file Dockerfile cũ hoặc phụ nếu có
+Dockerfile.*
+.dockerignore
+
+# Bỏ tài liệu hoặc README
+*.md
+LICENSE
+
+# Bỏ file cấu hình dev
+*.launch.json
+*.env
+*.log
+
+# Bỏ cache npm nếu có (nếu bạn dùng frontend cùng backend)
+node_modules/
+npm-debug.log

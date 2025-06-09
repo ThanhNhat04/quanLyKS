@@ -5,15 +5,22 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.WebHost.UseUrls("http://+:80");
+
+// ✅ Đọc cấu hình Kestrel từ appsettings.json
+builder.WebHost.ConfigureKestrel((context, options) =>
+{
+    options.Configure(context.Configuration.GetSection("Kestrel"));
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// ✅ Kết nối SQL Server
 builder.Services.AddDbContext<HotelDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// ✅ Cấu hình JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -29,23 +36,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-else
-{
-    app.UseExceptionHandler("/Error");
-    app.UseHsts();
-}
+//  Swagger 
+app.UseSwagger();
+app.UseSwaggerUI();
+
 
 app.UseHttpsRedirection();
-
-app.UseAuthentication(); 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
+app.MapGet("/", context =>
+{
+    context.Response.Redirect("/swagger");
+    return Task.CompletedTask;
+});
 app.Run();
