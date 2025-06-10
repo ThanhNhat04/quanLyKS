@@ -12,6 +12,17 @@ builder.WebHost.ConfigureKestrel((context, options) =>
     options.Configure(context.Configuration.GetSection("Kestrel"));
 });
 
+// ✅ Cho phép CORS toàn cục
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -36,10 +47,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 var app = builder.Build();
 
-//  Swagger 
+// ✅ Bật Swagger
 app.UseSwagger();
 app.UseSwaggerUI();
 
+// ✅ Bật CORS trước Authentication
+app.UseCors("AllowAll");
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
@@ -51,4 +64,5 @@ app.MapGet("/", context =>
     context.Response.Redirect("/swagger");
     return Task.CompletedTask;
 });
+
 app.Run();
