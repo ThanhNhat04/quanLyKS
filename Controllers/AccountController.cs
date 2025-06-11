@@ -54,13 +54,16 @@ namespace QLKhachSan.Controllers
                 PhoneNumber = model.Phone,
                 Address = model.Address,
                 AccountId = account.AccountId,
-                RoleId = 1 // Mặc định là Quản lý
+                RoleId = 1 // Default role
             };
 
             _context.Customers.Add(customer);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Registration successful", AccountId = account.AccountId });
+            var token = GenerateJwtToken(account);
+            var refreshToken = GenerateRefreshToken();
+
+            return Ok(new { token, refreshToken });
         }
 
         // POST: api/Account/login
@@ -78,18 +81,11 @@ namespace QLKhachSan.Controllers
             }
 
             var token = GenerateJwtToken(account);
+            var refreshToken = GenerateRefreshToken();
 
-            return Ok(new
-            {
-                token,
-                account.AccountId,
-                account.Username,
-                DisplayName = account.DisplayName,
-                Role = account.Customer?.Role?.RoleName ?? "Unknown"
-            });
+            return Ok(new { token, refreshToken });
         }
 
-        // Generate JWT token
         private string GenerateJwtToken(Account account)
         {
             var role = account.Customer?.Role?.RoleName ?? "User";
@@ -112,9 +108,17 @@ namespace QLKhachSan.Controllers
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-    }
 
-    // DTOs
+        private string GenerateRefreshToken()
+        {
+            var randomBytes = new byte[32];
+            using (var rng = new System.Security.Cryptography.RNGCryptoServiceProvider())
+            {
+                rng.GetBytes(randomBytes);
+                return Convert.ToBase64String(randomBytes);
+            }
+        }
+    }
 
     public class RegisterRequest
     {
@@ -123,7 +127,6 @@ namespace QLKhachSan.Controllers
         public string DisplayName { get; set; }
         public string Email { get; set; }
         public string Phone { get; set; }
-
         public string FullName { get; set; }
         public string Address { get; set; }
     }
