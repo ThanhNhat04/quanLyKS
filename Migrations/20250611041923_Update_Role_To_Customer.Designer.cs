@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ql.Migrations
 {
     [DbContext(typeof(HotelDbContext))]
-    [Migration("20250514065806_InitCreate")]
-    partial class InitCreate
+    [Migration("20250611041923_Update_Role_To_Customer")]
+    partial class Update_Role_To_Customer
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -49,16 +49,11 @@ namespace ql.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("RoleId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("AccountId");
-
-                    b.HasIndex("RoleId");
 
                     b.ToTable("Accounts");
                 });
@@ -77,10 +72,10 @@ namespace ql.Migrations
                     b.Property<DateTime>("CheckOutTime")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("CustomerId")
+                    b.Property<int?>("CustomerId")
                         .HasColumnType("int");
 
-                    b.Property<int>("RoomId")
+                    b.Property<int?>("RoomId")
                         .HasColumnType("int");
 
                     b.Property<string>("Status")
@@ -104,6 +99,9 @@ namespace ql.Migrations
                     b.Property<int>("ServiceId")
                         .HasColumnType("int");
 
+                    b.Property<DateTime>("ServiceDate")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("BookingId", "ServiceId");
 
                     b.HasIndex("ServiceId");
@@ -119,23 +117,30 @@ namespace ql.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CustomerId"));
 
+                    b.Property<int>("AccountId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Address")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("FullName")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PhoneNumber")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("RoleId")
+                        .HasColumnType("int");
+
                     b.HasKey("CustomerId");
+
+                    b.HasIndex("AccountId")
+                        .IsUnique();
+
+                    b.HasIndex("RoleId");
 
                     b.ToTable("Customers");
                 });
@@ -152,22 +157,18 @@ namespace ql.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("ItemName")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
 
                     b.Property<string>("Status")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Supplier")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Unit")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("InventoryId");
@@ -187,7 +188,6 @@ namespace ql.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Status")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("TotalAmount")
@@ -376,30 +376,15 @@ namespace ql.Migrations
                     b.ToTable("Staffs");
                 });
 
-            modelBuilder.Entity("HotelManagement.Models.Account", b =>
-                {
-                    b.HasOne("HotelManagement.Models.Role", "Role")
-                        .WithMany("Accounts")
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Role");
-                });
-
             modelBuilder.Entity("HotelManagement.Models.Booking", b =>
                 {
                     b.HasOne("HotelManagement.Models.Customer", "Customer")
                         .WithMany("Bookings")
-                        .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("CustomerId");
 
                     b.HasOne("HotelManagement.Models.Room", "Room")
                         .WithMany("Bookings")
-                        .HasForeignKey("RoomId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("RoomId");
 
                     b.Navigation("Customer");
 
@@ -423,6 +408,25 @@ namespace ql.Migrations
                     b.Navigation("Booking");
 
                     b.Navigation("Service");
+                });
+
+            modelBuilder.Entity("HotelManagement.Models.Customer", b =>
+                {
+                    b.HasOne("HotelManagement.Models.Account", "Account")
+                        .WithOne("Customer")
+                        .HasForeignKey("HotelManagement.Models.Customer", "AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HotelManagement.Models.Role", "Role")
+                        .WithMany("Customers")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Account");
+
+                    b.Navigation("Role");
                 });
 
             modelBuilder.Entity("HotelManagement.Models.Invoice", b =>
@@ -458,6 +462,11 @@ namespace ql.Migrations
                     b.Navigation("RoomType");
                 });
 
+            modelBuilder.Entity("HotelManagement.Models.Account", b =>
+                {
+                    b.Navigation("Customer");
+                });
+
             modelBuilder.Entity("HotelManagement.Models.Booking", b =>
                 {
                     b.Navigation("BookingServices");
@@ -478,7 +487,7 @@ namespace ql.Migrations
 
             modelBuilder.Entity("HotelManagement.Models.Role", b =>
                 {
-                    b.Navigation("Accounts");
+                    b.Navigation("Customers");
                 });
 
             modelBuilder.Entity("HotelManagement.Models.Room", b =>

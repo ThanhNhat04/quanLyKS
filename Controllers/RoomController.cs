@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
 using HotelManagement.Models;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace QLKhachSan.Controllers
 {
@@ -18,17 +20,40 @@ namespace QLKhachSan.Controllers
 
         // GET: api/Room
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<ActionResult<IEnumerable<RoomDto>>> GetAll()
         {
-            var rooms = await _context.Rooms.ToListAsync();
+            var rooms = await _context.Rooms
+                .Include(r => r.RoomType)
+                .Select(r => new RoomDto
+                {
+                    RoomId = r.RoomId,
+                    RoomNumber = r.RoomNumber,
+                    RoomType = r.RoomType.RoomTypeName,
+                    Price = r.Price,
+                    Status = r.Status
+                })
+                .ToListAsync();
+
             return Ok(rooms);
         }
 
         // GET: api/Room/5
         [HttpGet("{roomId}")]
-        public async Task<IActionResult> GetById(int roomId)
+        public async Task<ActionResult<RoomDto>> GetById(int roomId)
         {
-            var room = await _context.Rooms.FindAsync(roomId);
+            var room = await _context.Rooms
+                .Include(r => r.RoomType)
+                .Where(r => r.RoomId == roomId)
+                .Select(r => new RoomDto
+                {
+                    RoomId = r.RoomId,
+                    RoomNumber = r.RoomNumber,
+                    RoomType = r.RoomType.RoomTypeName,
+                    Price = r.Price,
+                    Status = r.Status
+                })
+                .FirstOrDefaultAsync();
+
             if (room == null)
                 return NotFound($"Room with ID = {roomId} not found.");
 
@@ -42,6 +67,14 @@ namespace QLKhachSan.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            // Kiểm tra RoomTypeId hợp lệ
+            var exists = await _context.RoomTypes.AnyAsync(rt => rt.RoomTypeId == model.RoomTypeId);
+            if (!exists)
+                return BadRequest($"RoomType with ID = {model.RoomTypeId} does not exist.");
+
+            // Gán Bookings trống để tránh lỗi nếu bị null
+            model.Bookings = new List<Booking>();
+
             _context.Rooms.Add(model);
             await _context.SaveChangesAsync();
 
@@ -53,16 +86,20 @@ namespace QLKhachSan.Controllers
         public async Task<IActionResult> Update(int roomId, [FromBody] Room model)
         {
             if (roomId != model.RoomId)
-                return BadRequest("ID mismatch.");
+                return BadRequest("Room ID mismatch.");
 
-            var existing = await _context.Rooms.FindAsync(roomId);
-            if (existing == null)
+            var existingRoom = await _context.Rooms.FindAsync(roomId);
+            if (existingRoom == null)
                 return NotFound($"Room with ID = {roomId} not found.");
 
-            _context.Entry(existing).CurrentValues.SetValues(model);
+            var roomTypeExists = await _context.RoomTypes.AnyAsync(rt => rt.RoomTypeId == model.RoomTypeId);
+            if (!roomTypeExists)
+                return BadRequest($"RoomType with ID = {model.RoomTypeId} does not exist.");
+
+            _context.Entry(existingRoom).CurrentValues.SetValues(model);
             await _context.SaveChangesAsync();
 
-            return Ok("Update successful.");
+            return Ok("Room updated successfully.");
         }
 
         // DELETE: api/Room/5
@@ -76,7 +113,17 @@ namespace QLKhachSan.Controllers
             _context.Rooms.Remove(room);
             await _context.SaveChangesAsync();
 
-            return Ok("Deleted successfully.");
+            return Ok("Room deleted successfully.");
         }
+    }
+
+    // ✅ DTO đơn giản hóa cho GET
+    public class RoomDto
+    {
+        public int RoomId { get; set; }
+        public string RoomNumber { get; set; }
+        public string RoomType { get; set; }
+        public decimal Price { get; set; }
+        public string Status { get; set; }
     }
 }

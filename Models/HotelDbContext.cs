@@ -42,6 +42,24 @@ namespace HotelManagement.Models
                 .HasOne(bs => bs.Service)
                 .WithMany(s => s.BookingServices)
                 .HasForeignKey(bs => bs.ServiceId);
+                 // One-to-One: Account ↔ Customer
+            modelBuilder.Entity<Customer>()
+                .HasOne(c => c.Account)
+                .WithOne(a => a.Customer)
+                .HasForeignKey<Customer>(c => c.AccountId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // One-to-Many: Role → Customers
+            modelBuilder.Entity<Customer>()
+                .HasOne(c => c.Role)
+                .WithMany(r => r.Customers)
+                .HasForeignKey(c => c.RoleId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Role>().HasData(
+            new Role { RoleId = 1, RoleName = "Admin" },
+            new Role { RoleId = 2, RoleName = "Staff" },
+            new Role { RoleId = 3, RoleName = "User" }
+    );
         }
     }
 }
